@@ -1,11 +1,8 @@
 import struct
 
-def block_header(version: int,prev_hash:str,merkle_root:str,timestamp:int,bits:int,nonce:int):
-    if len(prev_hash) != 64 or len(merkle_root) != 64:
-        raise ValueError("prev_hash and merkle_root must be 64 hex chars each")
+def block_header(version: int,prev_hash:bytes,merkle_root:bytes,timestamp:int,bits:int,nonce:int):
     
-
-    header=struct.pack(">I",version)+bytes.fromhex(prev_hash)+bytes.fromhex(merkle_root)+struct.pack(">III",timestamp,bits,nonce)
+    header=struct.pack(">I",version)+prev_hash+merkle_root+struct.pack(">III",timestamp,bits,nonce)
     
     if len(header) != 80:
         raise ValueError(f"Invalid header length: {len(header)} (expected 80)")
@@ -14,8 +11,8 @@ def block_header(version: int,prev_hash:str,merkle_root:str,timestamp:int,bits:i
 
 def main():
     version=1
-    prev_hash="0"*64
-    merkle_root="0"*64
+    prev_hash=b"\x00" * 32
+    merkle_root=b"\x00" * 32
     timestamp=1
     bits=0x1e0ffff0
     nonce=0
