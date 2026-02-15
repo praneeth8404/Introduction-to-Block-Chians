@@ -52,16 +52,17 @@ def main():
     transactions = generate_tranasctions(20000)
     height=1
     prev_block_header=None
-    bits=0x1e0ffff0
+    bits=0x1e00ffff
     target = target_from_bits(bits)
     blocks = [] 
+    start = time.perf_counter()
     while transactions:
         selected_transactions = select_transactions(transactions,height)
         consumed = len(selected_transactions) - 1
         del transactions[:consumed]
         root=build_merkle_root(selected_transactions)
         timestamp=int(time.time())
-        prev_header = (b"\x00" * 32) if prev_block_header is None else sha256d(prev_header)
+        prev_header = (b"\x00" * 32) if prev_block_header is None else sha256d(prev_block_header)
         found_header = None
         found_nonce = None
         for nonce in range(0, 2**32):
@@ -83,8 +84,10 @@ def main():
         blocks.append(block_obj)
         
         height+=1
-        prev_header=found_header
-    
+        prev_block_header=found_header
+    end = time.perf_counter()
+    duration = end - start
+    print(f"Total time taken: {duration:.2f} seconds")
     with open("blockchain.json", "w", encoding="utf-8") as f:
         json.dump(blocks, f, indent=2)    
 
