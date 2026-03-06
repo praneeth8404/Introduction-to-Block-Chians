@@ -1,0 +1,112 @@
+Why Merkle trees? Show how a Merkle tree enables efficient membership proofs (SPV-style idea) and what breaks if you used just “hash(all txns)” without a tree
+
+    Merkle trees exist because you want two things at once:
+
+        1. the block header should contain one small commitment to all transactions
+        2. later, you should be able to prove “this transaction is in that block” without sending the whole block
+
+    How a Merkle tree gives efficient membership proofs (SPV idea)
+
+        * Each transaction is hashed → these hashes are the leaves
+        * Pairwise hash upward until one hash remains → Merkle root
+        * The Merkle root goes in the block header (which PoW commits to)
+
+    Now, to prove a specific transaction (Tx) is included, you don’t send all transactions. You send a Merkle proof:
+
+        * h = H(Tx)
+        * the sibling hashes along the path from that leaf to the root (one hash per tree level)
+
+    The verifier (SPV client) does:
+
+        * combine (h) with sibling hash level by level until you end up with a single computed root
+        * check if it equals the header’s Merkle root
+
+    Proof size: about log2(n) hashes for n transactions.
+    So for 2,048 txns, the proof is 11 hashes — tiny.
+
+    That’s the SPV-style win: a light client can download block headers + one Merkle proof, instead of full blocks.
+
+    What breaks if you used just “hash(all txns)” (a flat hash)
+
+    Suppose your commitment is:
+    [R] = H(Tx1 || Tx2 || ............ || Txn)
+    
+
+    To prove (Tx_k) is included, the verifier needs to recompute R. But to recompute R, they need all transactions.
+
+    That kills the light-client model:
+
+        * No small proofs
+        * No efficient “give me just enough to verify my payment”
+        * Bandwidth and storage increases.
+
+
+Desirable properties of money: Explain fungibility, durability, portability (censorship resistance), divisibility, scarcity—and connect each to Bitcoin’s design claims.
+
+   Bitcoin’s core claim is that cryptography + distributed consensus can deliver money-like properties without relying on a central issuer
+
+    Fungibility: Any unit of money is interchangeable with any other unit of the same face value.
+
+        Bitcoin design connection:
+
+            * The protocol doesn’t attach “quality grades” to coins. 1 BTC is nominally the same as any other.
+        
+    Durability: Money should not physically degrade, and the record of ownership should persist.
+
+        Bitcoin design connection:
+
+            * Value is controlled by cryptographic keys and the ledger is duplicated across many nodes, so it doesn’t rely on any single system to survive.
+            * Each block commits to the previous block, making edits obvious, and ongoing block production keeps the record current and consistent.
+
+    Portability: Money should move easily across distance/time, and ideally transfers shouldn’t require permission.
+
+        Bitcoin design connection:
+
+            * Anyone can create an address and move value by broadcasting a signed transaction as there is no account setup or a central operator.
+            * Transactions propagate via the P2P network and get confirmed by miners per consensus rules as there is no single choke point or approve/deny authority.
+
+    Divisibility: Money should support small and large payments precisely.
+
+        Bitcoin design connection:
+
+            * 1 BTC = 100,000,000 satoshis, so it’s highly divisible at the protocol level.
+
+    Scarcity: Supply should be limited or predictably constrained so it can’t be inflated at will.
+
+        Bitcoin design connection:
+
+            * Keeps block production roughly steady over time, so issuance follows schedule rather than speeding up when more miners join.
+            * Capped total supply 21M BTC enforced by consensus rules.
+            * Block subsidy decreases on a fixed schedule, reducing new supply rate over time.
+            * S/F ratio tends to infinity overtime.
+
+Define money’s 3 roles (medium of exchange, unit of account, store of value) and argue where Bitcoin fits well vs poorly.
+    
+    Money’s 3 roles
+
+        * Medium of exchange: Money is the thing people actually use to pay for goods/services.
+
+        * Unit of account: Money is standard measure of value. Salaries, invoices, accounting books are denominated in it.
+
+        * Store of value: Money allows value to be stored overtime to be spent at liesure.
+
+    Where Bitcoin fits well vs poorly
+
+        Medium of exchange
+
+            * Fits well: Money settlement without relying on a specific institution especially cross border.
+            * Fits poorly: For everyday payments on the base layer because it can be slow/fees vary.
+
+        Unit of account
+
+            * Fits poorly (today): most prices and contracts aren’t denominated in BTC.
+            * Fits better (niche): crypto-native ecosystems where BTC is a common reference asset.
+
+        Store of value
+
+            * Fits well: supply is predictable and capped, so it’s designed to be scarce.
+            * Fits poorly: price swings a lot, so your buying power can change quickly
+
+
+
+

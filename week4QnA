@@ -1,0 +1,27 @@
+Block validation checklist: What must a node validate in a received block (PoW, header linkage, timestamp rules, Merkle root, coinbase rules, per-tx validity)?
+
+    A node/miner must validate first, then forward to avoid flooding the network with invalid data and reduce DoS risk and it must be fast to avoid increasing fork probability. 
+
+    Here’s the checklist,
+
+    1) Check Proof-of-Work
+
+        * Verify the block’s header hash satisfies the PoW condition (hash below target).
+
+    2) Check header fields + linkage
+
+        * Check header fields includes verifying the header is well-formed and that it correctly references the previous block via Prev Has (the linkage) 
+        * Timestamp must satisfy protocol acceptance constraints(not way too back in past or way ahead in the future). 
+        * Recompute the Merkle root from the block body’s transaction hashes and ensure it matches the header’s Merkle Root field.
+
+    3) Check coinbase (correct fees)
+
+        * Validate the coinbase transaction pays out correctly: it should not “create” more BTC than allowed. (fees <= block_subsidy + txn_fees)
+
+    4) Check every transaction (per-tx validity)
+
+        * validate every transaction before forwarding by checking if inputs are valid and unspent, scripts/signatures satisfy referenced outputs, and values are conserved (fees implied).
+
+    5) Check block size
+
+        * Block size must be within allowed limits.

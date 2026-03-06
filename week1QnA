@@ -1,0 +1,156 @@
+Blockchain as a data structure: Define “linked list with hash pointers,” explain the role of the genesis block, and justify the tamper-proof claim using the hash-pointer linkage idea.
+
+    A blockchain (the data structure) is basically a linked list where each “next pointer” is a cryptographic hash, not a memory address.
+
+    Linked list with hash pointers
+
+    In a normal linked list, each node stores:
+
+        * its data
+        * a pointer to the previous/next node (an address)
+
+    In a blockchain, each block stores:
+
+        * block data (typically: transactions + metadata)
+        * prev_hash = `H(previous block header)` (or hash of the previous block, depending on design)
+
+    That `prev_hash` is the “hash pointer”: it both points to the previous block (by its identifier) and commits to it (because if the previous block changes, its hash changes).
+
+    So block *i* contains something like:
+
+        * `B_i = (data_i, prev_hash = H(B_{i-1}))`
+
+    Genesis block
+
+    The genesis block is the first block in the chain.
+
+        * It has no real predecessor, so its `prev_hash` is typically a fixed constant (often all zeros) or a special null value.
+        * It is the anchor from which the entire chain’s identity grows.
+        * Practically, it bootstraps:
+            * initial parameters (sometimes embedded in code/config),
+            * the starting ledger state (e.g., initial distribution in some systems),
+            * and gives everyone a common starting reference.
+
+    Why the “tamper-proof” claim holds (hash-pointer linkage)
+
+    “Tamper-proof” here means tamper-evident + economically infeasible to rewrite, not “mathematically impossible.”
+
+    Suppose an attacker edits an old block `B_k` (changes a transaction, timestamp, anything).
+
+        1. That changes the contents of `B_k`.
+        2. Therefore its hash changes: `H(B_k)` changes.
+        3. But block `B_{k+1}` stores `prev_hash = H(B_k)` (the old value). Now `B_{k+1}` no longer matches its stored pointer.
+        4. To “fix” that, the attacker must recompute `B_{k+1}` so its `prev_hash` matches the new `H(B_k)`.
+        5. But changing `B_{k+1}` changes `H(B_{k+1})`, which breaks `B_{k+2}`, and so on.
+
+    So one edit forces a cascading repair from `B_k` all the way to the tip.
+
+    Where consensus comes in (the real-world enforcement)
+
+    The hash-pointer chain makes tampering obvious. Consensus makes rewriting hard:
+        * In PoW, you’d need to redo the proof-of-work for `B_k, B_{k+1}, …` and also catch up/overtake the honest chain.
+
+    That’s why the claim is: modifying history requires rebuilding the chain from the modification point onward under the consensus rules, which is computationally/economically prohibitive unless the attacker controls enough power.
+
+Accounts and transactions model: Explain how a public key can act as an “account number,” how value transfer is represented, and why the sender must sign with their secret key.
+
+    Public key as an “account number”
+
+    In an account-based blockchain (think Ethereum-style), an account is identified by a public identifier that anyone can see and send value to.
+
+        * Conceptually: public key (or an address derived from it) is your *account number*.
+        * People can say: “Send 5 units to this address,” without needing permission from you.
+        * The network uses that identifier to look up the account’s current balance/state.
+
+    So: public key/address = where value can be received.
+
+    How value transfer is represented
+
+    A transfer is a transaction that encodes:
+
+        * from: sender’s account (address/public key reference)
+        * to: receiver’s account (address)
+        * amount
+        * usually also: fee, nonce/sequence number (to prevent replay/order transactions), and other metadata
+
+    When the transaction is accepted by consensus and included in a block, the state update is:
+
+        * sender balance decreases by (amount + fee)
+        * receiver balance increases by amount
+        * fee goes to miner/validator (depending on the chain)
+
+    So the blockchain is basically a replicated state machine applying:
+    state = state + transaction effects.
+
+    Why the sender must sign with their secret key
+
+    Because otherwise anyone could spend anyone’s money.
+
+        * The transaction must prove: “I am authorized to move funds from this sender account.”
+        * The network can’t rely on usernames/passwords or a bank clerk. It needs a cryptographic proof that is:
+        
+            * publicly verifiable by every node
+            * hard to forge
+
+    That’s exactly what digital signatures do:
+
+        * Sender signs the transaction with their secret/private key.
+        * Every node verifies the signature using the sender’s public key.
+        * If it verifies, nodes accept that the owner of that account authorized the transfer.
+
+    This also gives:
+
+        * integrity: you can’t change the amount/to-address without breaking the signature
+        * non-repudiation (practically): the sender can’t plausibly deny authorizing it (assuming key control)
+
+    To Summarise public key identifies the account; transactions are state updates; signatures are the permission check that prevents theft and tampering.
+
+Explain signing vs verification, what guarantees digital signatures provide (authenticity, integrity, non-repudiation), and why a user must protect the secret key.
+
+    Signing vs verification
+
+        Signing is done by the owner of the account:
+
+            * Input: the message (in blockchains, usually a transaction or its hash) + the secret/private key
+            * Output: a signature (a short blob of bits)
+
+        Verification is done by everyone else (nodes, wallets, auditors):
+
+            * Input: the message + the signature + the signer’s public key
+            * Output: valid / invalid
+
+        Key point: verification is public and easy; forging a valid signature without the private key should be computationally infeasible.
+
+    What guarantees digital signatures provide
+
+        Authenticity (who authorized it)
+
+            If the signature verifies under Alice’s public key, the network concludes that, “This transaction was authorized by whoever controls Alice’s private key.”
+            In blockchain terms: “Only the key-holder can spend from this account.”
+
+        Integrity (nothing was changed)
+
+            The signature is bound to the exact message contents.Change the recipient, amount, nonce, fee—anything—and the signature stops verifying.
+            So signatures make transactions tamper-evident.
+
+        Non-repudiation (can’t plausibly deny later)
+
+            Since only the private key can produce that signature (assuming secure crypto and key control), the signer can’t credibly say:“I didn’t authorize this.”
+
+    Why the user must protect the secret key
+
+        Because the private key is the only credential that matters.
+
+        If someone gets your private key:
+
+            * They can sign transactions that spend your funds.
+            * The network will accept them as legitimate because verification will pass.
+            * There’s typically no chargeback and no central admin to reverse it.
+
+        If you lose your private key:
+
+            * You lose the ability to sign → you lose access to the funds/state forever
+
+        So operationally private key control = account control.
+
+
